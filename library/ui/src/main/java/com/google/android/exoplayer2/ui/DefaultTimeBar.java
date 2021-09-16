@@ -919,6 +919,10 @@ public class DefaultTimeBar extends View implements TimeBar {
     }
   }
 
+  public Drawable getThumbDrawable(){
+      return scrubberDrawable;
+  }
+
   private void updateDrawableState() {
     if (scrubberDrawable != null && scrubberDrawable.isStateful()
         && scrubberDrawable.setState(getDrawableState())) {
