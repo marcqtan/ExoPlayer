@@ -24,16 +24,7 @@ import com.google.common.primitives.Ints;
 import java.nio.ByteBuffer;
 import java.util.List;
 import org.junit.rules.ExternalResource;
-import org.robolectric.shadows.MediaCodecInfoBuilder;
-import org.robolectric.shadows.ShadowMediaCodec;
-import org.robolectric.shadows.ShadowMediaCodecList;
 
-/**
- * A JUnit @Rule to configure Roboelectric's {@link ShadowMediaCodec}.
- *
- * <p>Registers a {@link org.robolectric.shadows.ShadowMediaCodec.CodecConfig} for each audio/video
- * MIME type known by ExoPlayer.
- */
 public final class ShadowMediaCodecConfig extends ExternalResource {
 
   public static ShadowMediaCodecConfig forAllSupportedMimeTypes() {
@@ -88,8 +79,6 @@ public final class ShadowMediaCodecConfig extends ExternalResource {
   @Override
   protected void after() {
     MediaCodecUtil.clearDecoderInfoCache();
-    ShadowMediaCodecList.reset();
-    ShadowMediaCodec.clearCodecs();
   }
 
   private void configureCodec(String codecName, String mimeType) {
@@ -107,26 +96,6 @@ public final class ShadowMediaCodecConfig extends ExternalResource {
       List<Integer> colorFormats) {
     MediaFormat mediaFormat = new MediaFormat();
     mediaFormat.setString(MediaFormat.KEY_MIME, mimeType);
-    MediaCodecInfoBuilder.CodecCapabilitiesBuilder capabilities =
-        MediaCodecInfoBuilder.CodecCapabilitiesBuilder.newBuilder().setMediaFormat(mediaFormat);
-    if (!profileLevels.isEmpty()) {
-      capabilities.setProfileLevels(profileLevels.toArray(new MediaCodecInfo.CodecProfileLevel[0]));
-    }
-    if (!colorFormats.isEmpty()) {
-      capabilities.setColorFormats(Ints.toArray(colorFormats));
-    }
-    ShadowMediaCodecList.addCodec(
-        MediaCodecInfoBuilder.newBuilder()
-            .setName(codecName)
-            .setCapabilities(capabilities.build())
-            .build());
-    // TODO: Update ShadowMediaCodec to consider the MediaFormat.KEY_MAX_INPUT_SIZE value passed
-    // to configure() so we don't have to specify large buffers here.
-    CodecImpl codec = new CodecImpl(mimeType);
-    ShadowMediaCodec.addDecoder(
-        codecName,
-        new ShadowMediaCodec.CodecConfig(
-            /* inputBufferSize= */ 100_000, /* outputBufferSize= */ 100_000, codec));
   }
 
   private static MediaCodecInfo.CodecProfileLevel createProfileLevel(int profile, int level) {
@@ -142,23 +111,4 @@ public final class ShadowMediaCodecConfig extends ExternalResource {
    * <p>Note: This currently drops all audio data - removing this restriction is tracked in
    * [internal b/174737370].
    */
-  private static final class CodecImpl implements ShadowMediaCodec.CodecConfig.Codec {
-
-    private final String mimeType;
-
-    public CodecImpl(String mimeType) {
-      this.mimeType = mimeType;
-    }
-
-    @Override
-    public void process(ByteBuffer in, ByteBuffer out) {
-      byte[] bytes = new byte[in.remaining()];
-      in.get(bytes);
-
-      // TODO(internal b/174737370): Output audio bytes as well.
-      if (!MimeTypes.isAudio(mimeType)) {
-        out.put(bytes);
-      }
-    }
-  }
 }

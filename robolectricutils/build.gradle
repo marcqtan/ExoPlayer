@@ -19,8 +19,8 @@ dependencies {
     compileOnly 'org.jetbrains.kotlin:kotlin-annotations-jvm:' + kotlinAnnotationsVersion
     implementation 'androidx.annotation:annotation:' + androidxAnnotationVersion
     testImplementation 'org.robolectric:robolectric:' + robolectricVersion
-    testImplementation project(modulePrefix + 'library-core')
-    testImplementation project(modulePrefix + 'testutils')
+    implementation project(modulePrefix + 'library-core')
+    implementation project(modulePrefix + 'testutils')
 }
 
 ext {

@@ -30,7 +30,6 @@ import com.google.common.collect.ImmutableList;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
-import org.robolectric.shadows.ShadowMediaCodec;
 
 /**
  * Generates randomized, but correct amount of data on MP3 audio input.
@@ -43,43 +42,9 @@ import org.robolectric.shadows.ShadowMediaCodec;
  * <p>All the data written to the output by the decoder can be obtained by getAllOutputBytes().
  */
 @RequiresApi(29)
-public final class RandomizedMp3Decoder implements ShadowMediaCodec.CodecConfig.Codec {
+public final class RandomizedMp3Decoder {
   private final List<byte[]> decoderOutput = new ArrayList<>();
   private int frameSizeInBytes;
-
-  @Override
-  public void process(ByteBuffer in, ByteBuffer out) {
-    if (in.remaining() == 0) {
-      // An empty frame will be queued by the MediaCodecRenderer on END_OF_STREAM.
-      return;
-    }
-
-    Assertions.checkState(
-        in.remaining() >= 4, "Frame size too small, should be at least 4 to hold an MP3 header");
-
-    // Get the desired output size for every input.
-    int headerDataBigEndian = Util.getBigEndianInt(in, in.position());
-    int frameCount = MpegAudioUtil.parseMpegAudioFrameSampleCount(headerDataBigEndian);
-
-    int expectedNumBytes = frameCount * frameSizeInBytes;
-    byte[] bytesToWrite = TestUtil.buildTestData(expectedNumBytes);
-
-    out.put(bytesToWrite);
-    decoderOutput.add(bytesToWrite);
-
-    in.position(in.limit());
-  }
-
-  @Override
-  public void onConfigured(MediaFormat format, Surface surface, MediaCrypto crypto, int flags) {
-    int pcmEncoding =
-        format.getInteger(
-            MediaFormat.KEY_PCM_ENCODING, /* defaultValue= */ AudioFormat.ENCODING_PCM_16BIT);
-    int channelCount = format.getInteger(MediaFormat.KEY_CHANNEL_COUNT);
-    Assertions.checkArgument(
-        format.getString(MediaFormat.KEY_MIME, MimeTypes.AUDIO_MPEG).equals(MimeTypes.AUDIO_MPEG));
-    frameSizeInBytes = Util.getPcmFrameSize(pcmEncoding, channelCount);
-  }
 
   /**
    * Returns all arrays of bytes output from the decoder.
